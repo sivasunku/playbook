@@ -7,7 +7,7 @@ Maintainer: Siva Sunku <siva.sunku@gmail.com>
 Description: Helps in finding the good strategies & evaluating them
 License: GNU
 LazyData: TRUE
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
 Depends: 
     dplyr,
     xts,
