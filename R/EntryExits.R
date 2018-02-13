@@ -47,10 +47,9 @@ longExit <- function(cPos,parms,m,i,...){
   
   bu <- as.numeric(m[i,]$bullFlow)
   be <- as.numeric(m[i,]$bearFlow)
-  
-  
+
   ##  --- Actual Inidcator check ---------------------------------------------------------
-  if (bu < be){
+  if ( (bu < be) && FALSE){
     cPos$closeDate  <- index(bar)
     cPos$closeFlag  <- TRUE
     cPos$closeQty   <- parms$qty
@@ -58,20 +57,40 @@ longExit <- function(cPos,parms,m,i,...){
     cPos$closeReason <- "Case#1"
     return(cPos)
   }
-  
+
   
   ##  --- SLP check ---------------------------------------------------------
-  if ( (parms$slpFlag) && (Lo < cPos$slpPrice) ){
+    #1. If open itself is less than slpPrice close the position with open price
+    if ( (parms$slpFlag) && (Op < cPos$slpPrice) ){
+      cPos$closeDate  <- index(bar)
+      cPos$closeFlag  <- TRUE
+      cPos$closeQty   <- parms$qty
+      cPos$closePrice <- Op
+      cPos$closeReason <- "SLP hit in Open"
+      return(cPos)
+    }
+    
+    #2. If in the candle slpPrice is hit, close the position
+    if ( (parms$slpFlag) && is.price.hit(cPos$slpPrice,bar) ){
+      cPos$closeDate  <- index(bar)
+      cPos$closeFlag  <- TRUE
+      cPos$closeQty   <- parms$qty
+      cPos$closePrice <- cPos$slpPrice
+      cPos$closeReason <- "SLP hit"
+      return(cPos)
+    }
+  
+  ##  --- Trailing SLP check -------------------------------------------------
+  if ( (parms$trlFlag) && (Op <= cPos$trailSlpPrice) ){
     cPos$closeDate  <- index(bar)
     cPos$closeFlag  <- TRUE
     cPos$closeQty   <- parms$qty
-    cPos$closePrice <- cPos$slpPrice
-    cPos$closeReason <- "SLP hit"
+    cPos$closePrice <- Op
+    cPos$closeReason <- "TrailingSLP hit in Open"
     return(cPos)
   }
   
-  ##  --- Trailing SLP check -------------------------------------------------
-  if ( (parms$trlFlag) && (Lo < cPos$trailSlpPrice) ){
+  if ( (parms$trlFlag) && is.price.hit(cPos$trailSlpPrice,bar) ){
     cPos$closeDate  <- index(bar)
     cPos$closeFlag  <- TRUE
     cPos$closeQty   <- parms$qty
@@ -81,14 +100,24 @@ longExit <- function(cPos,parms,m,i,...){
   }
  
   ##  --- Profit Booking check -------------------------------------------------
-  if ( (parms$pbFlag) && (Hi > cPos$pbPrice) ){
-    cPos$closeDate  <- index(bar)
-    cPos$closeFlag  <- TRUE
-    cPos$closeQty   <- parms$pbQty
-    cPos$closePrice <- cPos$slpPrice
-    cPos$closeReason <- "Profit Booking"
-    return(cPos)
-  }
+      #1. If Open itself more than pbPrice, close the position with Openprice
+      if ( (parms$pbFlag) && (Op > cPos$pbPrice) ){
+        cPos$closeDate  <- index(bar)
+        cPos$closeFlag  <- TRUE
+        cPos$closeQty   <- parms$pbQty
+        cPos$closePrice <- Op
+        cPos$closeReason <- "Profit Booking in Open"
+        return(cPos)
+      }
+     #2. If Candle hit the pbPrice, close the position
+      if ( (parms$pbFlag) && is.price.hit(cPos$pbPrice,bar) ){
+        cPos$closeDate  <- index(bar)
+        cPos$closeFlag  <- TRUE
+        cPos$closeQty   <- parms$pbQty
+        cPos$closePrice <- cPos$pbPrice
+        cPos$closeReason <- "Profit Booking"
+        return(cPos)
+      }
   
   return(cPos)
 }
@@ -175,7 +204,7 @@ shortExit <- function(cPos,parms,m,i,...){
     cPos$closeDate  <- index(bar)
     cPos$closeFlag  <- TRUE
     cPos$closeQty   <- parms$pbQty
-    cPos$closePrice <- cPos$slpPrice
+    cPos$closePrice <- cPos$pbPrice
     cPos$closeReason <- "Profit Booking"
     return(cPos)
   }
@@ -184,8 +213,10 @@ shortExit <- function(cPos,parms,m,i,...){
   return(cPos)
 }
 
+## --- Calculate limits -------------------------------------------------------------
 myCalcLimits      <- function(pos,tradeParms,bar,...) {
   t <- tradeParms
+  browser()
   ##  --- Set the Variables ---------------------------------------------------------
   Op <- as.numeric(bar$Open)
   Hi <- as.numeric(bar$High)
@@ -194,40 +225,57 @@ myCalcLimits      <- function(pos,tradeParms,bar,...) {
   
   ## --- For Long positions -------------------------------
   if ( islong(pos) ) {
-    ## SLP
+  ## --- SLP ------------------------------------------------
     pos$slpPrice <- ifelse( t$pctFlag,
                             pos$openPrice * (1 - (t$slpAmt/100) ) ,
                             pos$openPrice - t$slpAmt )
     pos$slpPrice <- round(pos$slpPrice,2)
     
-    ## PB
+
+  ## --- PB Long ---------------------------------------------
     pos$pbPrice  <- ifelse( t$pctFlag,
                             pos$openPrice * (1 + (t$pbAmt/100) )  ,
                             pos$openPrice + t$pbAmt )
     pos$pbPrice <- round(pos$pbPrice,2)
     
+    if (is.price.hit(pos$pbPrice,bar) ) {
+      
+      temp  <- ifelse( t$pctFlag,
+                              pos$pbPrice * (1 + (t$pbAmt/100) )  ,
+                              pos$pbPrice + t$pbAmt )
+      temp <- round(temp,digits = 2)
+      pos$pbPrice <- max(pos$pbPrice,temp)
+    }
     
-    
-    #Initial trailing Price os calculated based on the openPrice, subsequent once based on the existing trailingPrice.
+  ## --- TrailPrice, TrailSLP --------------------------------------
+    #Set initial trailPrice
     if ( is.na(pos$trailPrice)) {
       pos$trailPrice <- ifelse( t$pctFlag,
                                 pos$openPrice * (1 + (t$trlAmt/100) ) , 
                                 pos$openPrice + t$trlAmt)
       pos$trailPrice <- round(pos$trailPrice,digits = 2)
-    } else {
-      #This is to be trailed only if Price is hit by the candle.
-      if ( Hi >= pos$trailPrice) {
-        temp <- ifelse( t$pctFlag,
-                        pos$trailPrice * (1 + (t$trlAmt/100) ) , 
-                        pos$trailPrice + t$trlAmt)
-        pos$trailPrice <- round(temp,digits = 2)
-      }
-    } #trailPrice End
+      
+      pos$trailSlpPrice <- ifelse( t$pctFlag,
+                                   pos$openPrice * (1 - (t$trlSlpAmt/100)),
+                                   pos$openPrice - t$trlSlpAmt )
+      pos$trailSlpPrice <- round(pos$trailSlpPrice,digits = 2)
+      
+    } 
     
-    pos$trailSlpPrice <- ifelse( t$pctFlag,
-                                 pos$trailPrice * (1 - (t$trlSlpAmt/100)),
-                                 pos$trailPrice - t$trlSlpAmt )
-    pos$trailSlpPrice <- round(pos$trailSlpPrice,digits = 2)
+    # If price hit the trail price, increase the trailSlpPrice
+    if ( is.price.hit(pos$trailPrice,bar) ) {
+      temp <- ifelse( t$pctFlag,
+                      pos$trailPrice * (1 + (t$trlAmt/100) ) , 
+                      pos$trailPrice + t$trlAmt)
+      pos$trailPrice <- round(temp,digits = 2)
+      
+      temp  <- ifelse( t$pctFlag,
+                       pos$trailSlpPrice * (1 + (t$trlSlpAmt/100)),
+                       pos$trailSlpPrice + t$trlSlpAmt )
+      temp  <- round(temp,digits = 2)
+      
+      pos$trailSlpPrice <- max(pos$trailSlpPrice,temp)
+    }
     
   }
   
