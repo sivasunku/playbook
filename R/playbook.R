@@ -14,6 +14,8 @@ source("R/EntryExits.R")
 source("R/graph.R")
 source("R/extraFunctions.R")
 source("R/mybacktest.R")
+source("R/myCalcLimits.R")
+
 ## ----Prepare the data----------------------------------------------------
 myWidth <- 9
 data("SBIN")
@@ -34,26 +36,30 @@ res <- na.trim(res)
 parms <- tradeParms()
 parms$longTrades  <- TRUE
 parms$shortTrades <- FALSE
+parms$sameDayFlag <- TRUE
 
 parms$instrument <- "SBIN"
-parms$qty <- 6000
-parms$pbQty <- 3000
-
-parms$pbFlag <- TRUE
-parms$pbAmt <- 12
-# # 
-parms$slpFlag <- FALSE
-parms$slpAmt <- 12
+parms$qty        <- 6000
+#
+parms$pctFlag    <- FALSE
+#
+parms$slpFlag    <- TRUE
+parms$slpAmt     <- 9
 # 
-parms$trlFlag <- FALSE
-parms$trlAmt <- 6
-parms$trlSlpAmt <- 6
+parms$pbFlag     <- TRUE
+parms$pbAmt      <- 15
+parms$pbQty      <- 3000
+parms$pbRunQty   <- 3000
+#
+parms$trlFlag     <- TRUE
+parms$trlInitAmt  <- 12
+parms$trlIncrAmt  <- 6
+parms$trlSlpAmt   <- NA
 
 
 ## ----Create the default portfolio----------------------------------------
 if( exists("pf") && is.portfolio(pf)) {delete.portfolio(pf = "default") }
 pf <- portfolio()
-
 
 ## ----backtest the strategies---------------------------------------------
 options(warn = 2)
@@ -78,9 +84,12 @@ ltStats <- stats.trades(lt)
 cbind(tStats,stStats,ltStats)
 t %>% group_by(direction,openReason,closeReason) %>% summarise(Profit = sum(netP))
 
+get.positions.table(pf) -> a
+write.csv(a,file = "temp3.csv")
 ## ----Graph the trades  ----------------------------------------------------
 #myGraph(pf,prices = res[,1:4],file = "temp4.pdf",by = "quarters")
 myGraph(pf,
         prices = res[,1:4],
         parms = parms,
+        file = "temp5.pdf",
         by = "quarters")

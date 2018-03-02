@@ -93,6 +93,8 @@ myGraph <- function(pf, prices,
       ex$sX  <- ex$sX * 10
       #ex[is.na(ex)] <- 0
       #plot(addTA(shortE, on=1, type='p', pch=24, cex=0.5,col="red",  bg="red"))
+      
+      #plot the buy/sell trades
       plot(addTA( ex,
              pch = c(24,25,24,25),
              col = c("blue","blue","red","red"),
@@ -103,10 +105,11 @@ myGraph <- function(pf, prices,
     }
     plot(addTA(res[,c("bullFlow","bearFlow")],col=c("green","red")))
     
+    #plot the PB price, trail price etc
     plot(addTA(pb[,c("pbPrice","slpPrice","trailSlpPrice","trailPrice")],
                col = c("green","red","blue","orange"),
-               type = c('o','o','o','o'),
-               on = 1
+               type = c('o','o','o','o')
+               #on = 3
                ))
     temp.plots[[i]] <- recordPlot()
   }

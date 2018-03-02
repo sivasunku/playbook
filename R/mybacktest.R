@@ -16,25 +16,45 @@ mybacktest  <- function(pf,dataset,parms,startat = 2,
   ## --- Long Positions Check --------------------------------------------------
   if (parms$longTrades) {
     pos <- position(instr)
+    doAct <- TRUE
     for (i in 1:maxR){
+      actFlag <- FALSE
       if ( isopen(pos) ){
         pos$barCount <- pos$barCount + 1
         pos <- longX(pos,parms,dataset,i,...)
         add.table.positions(pf,bar = dataset[i,],pos)
+        
+        ## ---- If position is closed, check if it is for Profit booking ----
         if ( isclosed(pos) ) {
           add.trxns.position(pf,pos,type = 'CLOSE')
           add.trades.position(pf,pos)
           
           pos$openQty   <- pos$openQty - pos$closeQty
-          pos$closeFlag <- ifelse(pos$openQty == 0,TRUE,FALSE)
           #Create new dummy position if position becomes complete zero
-          if ( isclosed(pos) ){ pos <- position(instr) }
+          if ( pos$openQty == 0) {
+            pos$closeFlag <- TRUE
+            pos <- position(instr)
+            actFlag <- TRUE
+          } else {
+            pos$closeFlag <- FALSE
+            pos$closeQty <- 0
+            pos$closeReason <- "None"
+          }
         }
       }  
       
+      #If same day new positions can be taken or not.
+      if ( parms$sameDayFlag == FALSE ) {
+        doAct <- ifelse(actFlag,FALSE,TRUE)
+      }
+      
       tempPos <- longE(parms,dataset,i,...)
-      if ( (!isopen(pos)) && islong(tempPos) ){
+      if ( (!isopen(pos)) && islong(tempPos) && (doAct) ){
         pos <- tempPos
+        #Increase the id when position is created
+        incr.positions.id(pf)
+        pos$id <- get.positions.id(pf)
+        #if(pos$id >=3) {browser()}
         add.trxns.position(pf,tempPos,type = 'OPEN')
       }
       
@@ -42,8 +62,8 @@ mybacktest  <- function(pf,dataset,parms,startat = 2,
       #   pod <- pos + tempPos
       #   add.trxns.position(pf,tempPos,type = 'OPEN')
       # }
-      browser()
-      pos <- calcLimits(pos,parms,dataset[i,])
+      pos <- calcLimits(pos,parms,dataset,i)
+      print(sprintf("Bar index: %s, pb: %f",index(dataset[i,]),pos$pbPrice))
     } #End of Long positions For loop
   }
   
@@ -71,7 +91,7 @@ mybacktest  <- function(pf,dataset,parms,startat = 2,
         add.trxns.position(pf,tempPos,type = 'OPEN')
       }
       add.table.positions(pf,bar = dataset[i,],pos)
-      pos <- calcLimits(pos,parms,dataset[i,])
+      pos <- calcLimits(pos,parms,dataset,i)
     }
   }
 }
