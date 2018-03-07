@@ -10,16 +10,17 @@ delete.portfolio()
 library(knitr)
 library(rulesNtrades)
 library(evalStrats)
-source("R/EntryExits.R")
+source("R/longs.R")
+source("R/shorts.R")
 source("R/graph.R")
 source("R/extraFunctions.R")
-source("R/mybacktest.R")
-source("R/myCalcLimits.R")
+# source("R/mybacktestWIP.R")
+# source("R/myCalcLimitsWIP.R")
 
 ## ----Prepare the data----------------------------------------------------
 myWidth <- 9
 data("SBIN")
-d <- SBIN["2016-02::2016-06"]
+d <- SBIN["2016-02::2016-12"]
 d1 <- flow(d)
 
 d2 <- rollapply(d1,
@@ -35,8 +36,8 @@ res <- na.trim(res)
 ## ----Set all the parameters     ----------------------------------------
 parms <- tradeParms()
 parms$longTrades  <- TRUE
-parms$shortTrades <- FALSE
-parms$sameDayFlag <- TRUE
+parms$shortTrades <- TRUE
+parms$sameDayFlag <- FALSE
 
 parms$instrument <- "SBIN"
 parms$qty        <- 6000
@@ -49,7 +50,7 @@ parms$slpAmt     <- 9
 parms$pbFlag     <- TRUE
 parms$pbAmt      <- 15
 parms$pbQty      <- 3000
-parms$pbRunQty   <- 3000
+parms$pbRunQty   <- 0
 #
 parms$trlFlag     <- TRUE
 parms$trlInitAmt  <- 12
@@ -63,12 +64,13 @@ pf <- portfolio()
 
 ## ----backtest the strategies---------------------------------------------
 options(warn = 2)
-mybacktest(pf,res,parms,
+
+backtest(pf,res,parms,
          longE = longEntry,
          longX = longExit,
          shortE = shortEntry,
          shortX = shortExit,
-         calcLimits = myCalcLimits
+         calcLimits = calcLimits
          )
 ## ----Get the trades  ----------------------------------------------------
 t  <- get.trades(pf)

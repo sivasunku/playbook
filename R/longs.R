@@ -46,7 +46,7 @@ longExit <- function(cPos,parms,m,i,...){
   
   bu <- as.numeric(m[i,]$bullFlow)
   be <- as.numeric(m[i,]$bearFlow)
-
+  
   ##  --- Actual Inidcator check ---------------------------------------------------------
   if ( (bu < be) && FALSE){
     cPos$closeDate  <- index(bar)
@@ -56,31 +56,20 @@ longExit <- function(cPos,parms,m,i,...){
     cPos$closeReason <- "Case#1"
     return(cPos)
   }
-
   
   
-  ##  --- SLP check ---------------------------------------------------------
-    #1. If open itself is less than slpPrice close the position with open price
-    if ( (parms$slpFlag) && (Op < cPos$slpPrice) ){
-      cPos$closeDate  <- index(bar)
-      cPos$closeFlag  <- TRUE
-      cPos$closeQty   <- cPos$openQty
-      cPos$closePrice <- Op
-      cPos$closeReason <- "SLP hit in Open"
-      return(cPos)
-    }
-    
-    #2. If in the candle slpPrice is hit, close the position
-    if ( (parms$slpFlag) && is.price.hit(cPos$slpPrice,bar) ){
-      cPos$closeDate  <- index(bar)
-      cPos$closeFlag  <- TRUE
-      cPos$closeQty   <- cPos$openQty
-      cPos$closePrice <- cPos$slpPrice
-      cPos$closeReason <- "SLP hit"
-      return(cPos)
-    }
   
-  ##  --- Trailing SLP check -------------------------------------------------
+  ##  --- SLP check  For Open---------------------------------------------------------
+  if ( (parms$slpFlag) && (Op < cPos$slpPrice) ){
+    cPos$closeDate  <- index(bar)
+    cPos$closeFlag  <- TRUE
+    cPos$closeQty   <- cPos$openQty
+    cPos$closePrice <- Op
+    cPos$closeReason <- "SLP hit in Open"
+    return(cPos)
+  }
+  
+  ##  --- trail SLP check for open---------------------------------------------------------
   if ( (parms$trlFlag) && (cPos$trailTrigFlag) && (Op <= cPos$trailSlpPrice) ){
     cPos$closeDate  <- index(bar)
     cPos$closeFlag  <- TRUE
@@ -90,6 +79,18 @@ longExit <- function(cPos,parms,m,i,...){
     return(cPos)
   }
   
+  
+  ##  --- SLP check---------------------------------------------------------
+  if ( (parms$slpFlag) && is.price.hit(cPos$slpPrice,bar) ){
+    cPos$closeDate  <- index(bar)
+    cPos$closeFlag  <- TRUE
+    cPos$closeQty   <- cPos$openQty
+    cPos$closePrice <- cPos$slpPrice
+    cPos$closeReason <- "SLP hit"
+    return(cPos)
+  }
+  
+  ##  --- Trailing SLP check -------------------------------------------------
   if ( (parms$trlFlag) && (cPos$trailTrigFlag) && is.price.hit(cPos$trailSlpPrice,bar)){
     cPos$closeDate  <- index(bar)
     cPos$closeFlag  <- TRUE
@@ -98,27 +99,28 @@ longExit <- function(cPos,parms,m,i,...){
     cPos$closeReason <- "TrailingSLP hit"
     return(cPos)
   }
- 
+  
   
   ##  --- Profit Booking check -------------------------------------------------
-      #1. If Open itself more than pbPrice, close the position with Openprice
-      if ( (parms$pbFlag) && (Op > cPos$pbPrice) && (cPos$openQty > parms$pbRunQty) ){
-        cPos$closeDate  <- index(bar)
-        cPos$closeFlag  <- TRUE
-        cPos$closeQty   <- min(parms$pbQty,cPos$openQty)
-        cPos$closePrice <- Op
-        cPos$closeReason <- "Profit Booking in Open"
-        return(cPos)
-      }
-     #2. If Candle hit the pbPrice, close the position
-      if ( (parms$pbFlag) && is.price.hit(cPos$pbPrice,bar) && (cPos$openQty > parms$pbRunQty) ){
-        cPos$closeDate  <- index(bar)
-        cPos$closeFlag  <- TRUE
-        cPos$closeQty   <- min(parms$pbQty,cPos$openQty)
-        cPos$closePrice <- cPos$pbPrice
-        cPos$closeReason <- "Profit Booking"
-        return(cPos)
-      }
+  #1. If Open itself more than pbPrice, close the position with Openprice
+  if ( (parms$pbFlag) && (Op > cPos$pbPrice) && (cPos$openQty > parms$pbRunQty) ){
+    cPos$closeDate  <- index(bar)
+    cPos$closeFlag  <- TRUE
+    cPos$closeQty   <- min(parms$pbQty,cPos$openQty)
+    cPos$closePrice <- Op
+    cPos$closeReason <- "Profit Booking in Open"
+    return(cPos)
+  }
+  #2. If Candle hit the pbPrice, close the position
+  if ( (parms$pbFlag) && is.price.hit(cPos$pbPrice,bar) && (cPos$openQty > parms$pbRunQty) ){
+    cPos$closeDate  <- index(bar)
+    cPos$closeFlag  <- TRUE
+    cPos$closeQty   <- min(parms$pbQty,cPos$openQty)
+    cPos$closePrice <- cPos$pbPrice
+    cPos$closeReason <- "Profit Booking"
+    return(cPos)
+  }
   
+  ## --- End Return -------------------------------------------------------------
   return(cPos)
 }
