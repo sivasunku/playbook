@@ -1,0 +1,10 @@
+myPlot <- function(x){
+  plot(x$Close,col="green",type = "l")
+}
+
+By law of economics, the demand spruts the price of a commodity, irrespective of the value of the commodity. Recently world has seen the surge in cryptocurrency prices sky rocketing before any value attached to it. So, it is demand that pushes the prices up. In general, Indians do think that the local demand created during festive seasons will make the prices go up. Though this is true for many commodities, but not to Gold. Festive season may affect the prices to a smaller(infact miniscule) extent, but it is the international economic environments that decide the prices of the yellow metal rather than home demand.We don't need to believe every opinion, but past 10 years data definitely gives the unbiased opinion.
+
+Here we studied the gold prices how they behaved 'N' days prior to the big Indian festive event - Diwali, the usual period where everyone buys the gold. So, if the demand for gold increases during festive season, so should be the prices. A comparision of prices from past 'N' days till diwali is studied. Unfortunately, the prices around 75% of the time are less than 60 percentile during diwali day. So, is it not Diwali that is causing the price fluctuations. Then who ?
+Another study done comparing the prices with international prices & correlation. The Indian gold price behaviour is almost inclined (90% of the time) to the international behaviour(where Diwali demand doesn't exist) rather than local demand - supply. 
+
+Its demand that definitely reason behind price action, but the local demand is a miniscule when compared to the factors like interest rates, volatility in the world markets, US Dollar strength, hedging, inflation & interest rate cycles.

@@ -1,0 +1,178 @@
+---
+title: "Gold Prices and Seasonal behaviour"
+author: "XXXXXXXXXXXXX"
+date: "Today"
+output: pdf_document
+---
+
+#Gold Data
+```{r block-1, include=FALSE,eval=FALSE}
+library(Quandl)
+library(dplyr)
+
+## --- Get Diwali days -----------------------------------------------------------------
+d <- read.csv("E:/R/Projects/playbook/diwaliDates",header = FALSE,stringsAsFactors = FALSE)
+d <- strptime(d[,1], format = "%d %B %Y")
+d <- as.Date(d)
+
+## --- Get goldbees price----------------------------------------------------------------
+gb <- Quandl("NSE/GOLDBEES",collapse="daily",start_date="2005-01-01",type="raw")
+gb <- xts(gb[c("Open","High","Low","Close")],order.by = gb$Date)
+```
+
+Diwali inflates the gold prices - Really ?
+
+Here we studied the gold prices how they behaved 'N' days prior to the big Indian festive event - Diwali, the usual period where everyone buys the gold. So, if the demand for gold increases during festive season, so should be the prices. A comparision of prices from past 'N' days till diwali is studied. Unfortunately, the prices around 75% of the time are less than 60 percentile when it nears diwali. So, is it not Diwali that is causing the price fluctuations. Then who ?
+
+Another study done comparing the prices with international prices & correlation. The Indian gold price behaviour is almost inclined (90% of the time) to the international behaviour(where Diwali demand doesn't exist) rather than local demand - supply. 
+
+Its demand that definitely reason behind price action, but the local demand is a miniscule when compared to the factors like interest rates, volatility in the world markets, US Dollar strength, hedging, inflation & interest rate cycles.
+
+For Study - 
+ 1. Two Gold ETF prices (one from India and one from US) are taken from 2008.  
+    a. GLD - Managed by SPDR Trust in US  
+    b. GOLDBEES - Managed by reliance in India  
+ 2. The prices prevN (60 days,30 days) of each year are considered as subset  
+ 3. To see if prices are increasing towards Diwali, close of price (percentile/quartile) with respect to the High-low price is measured. More the percentile, the prices are inclined towards Highs.  
+ 4. To see if prices are correlated with international prices (GLD), statistical correlation is considered  
+
+
+#Diwali Days 
+```{r block-2, include=TRUE}
+cat(format(d,"%Y %B %d"),sep = "#  \n")
+```
+
+```{r block-60a, include=FALSE,eval=TRUE,results='asis'}
+prevN <- 60
+yearlyData <- lapply(d,
+                     FUN = function(x){
+                       tmp <- (x-prevN):(x-2)
+                       gbXts[as.Date(tmp)]
+                       }
+                     )
+```
+
+#Goldbees price during Diwali for '60' previous days
+```{r block-60b, include=TRUE,eval=TRUE,results='asis'}
+par(mfrow = c(2,5))
+plot(yearlyData[[1]]$Close,main = "",sub = "")
+plot(yearlyData[[2]]$Close,main = "",sub = "")
+plot(yearlyData[[3]]$Close,main = "",sub = "")
+plot(yearlyData[[4]]$Close,main = "",sub = "")
+plot(yearlyData[[5]]$Close,main = "",sub = "")
+
+plot(yearlyData[[6]]$Close,main = "",sub = "")
+plot(yearlyData[[7]]$Close,main = "",sub = "")
+plot(yearlyData[[8]]$Close,main = "",sub = "")
+plot(yearlyData[[9]]$Close,main = "",sub = "")
+plot(yearlyData[[10]]$Close,main = "",sub = "")
+
+```
+
+Calculate the percentile of close with respect to 60 days previous prices.
+```{r block-60c, results='asis',eval=TRUE}
+subDays    <- lapply(d,FUN = function(x){return( (x-prevN):(x-2) ) })
+subDays    <- as.Date(unlist(subDays))
+
+dummyXts <- xts(order.by = subDays)
+gb    <- gbXts[index(dummyXts)]
+
+#Make High,Low,Close for each year
+res <- to.yearly(gb)
+colnames(res) <- colnames(gbXts)
+res$percentile <- (res$Close - res$Low) / (res$High - res$Low)
+res$percentile <- round(res$percentile, digits = 2)
+cat(sprintf("Year = %d # percentile = %0.2f",year(index(res)),res$percentile),sep = "#  \n  ")
+```
+    
+How many years the percentile is less than 60 (Meaning closer to the lows)? `r nrow(res[res$percentile < 0.6,])`  
+How many years the percentile is less than 50 (Meaning closer to the lows)? `r nrow(res[res$percentile < 0.5,])`  
+Total number of years : `r nrow(res)`  
+
+#Compare with international prices
+```{r block-60d, include=TRUE,eval=TRUE}
+#Since international markets revolve mostly around US, the US price effect of today (say 02nd) is reflected on (03rd) of India.
+#So, lag the prices by 1 day to compare apples to apples
+gld   <- lag.xts(GLD[index(dummyXts)])
+a <- merge.xts(gld$Close,gb$Close,join = "inner")
+a <- na.trim(a)
+colnames(a) <- c("intlClose","indiaClose")
+cor(a$intlClose,a$indiaClose)
+```
+How many times the prise rise in US reflected the price rise in India ? `r cor(a$intlClose,a$indiaClose)`  
+
+
+#60 Days Conclusion
+This concludes that almost `r nrow(res[res$percentile < 0.6,]) * 10`  percent of times the diwali prices drifted lower than 60 percentile and
+`r cor(a$intlClose,a$indiaClose)*100`  percent times is closely correlated with international prices.
+
+
+
+#30 Days Evaluation
+#==================
+```{r block-30a, include=FALSE,eval=TRUE,results='asis'}
+prevN <- 30
+yearlyData <- lapply(d,
+                     FUN = function(x){
+                       tmp <- (x-prevN):(x-2)
+                       gbXts[as.Date(tmp)]
+                       }
+                     )
+```
+
+
+#Graph the 30 days previous prices
+```{r block-30b, include=TRUE,eval=TRUE,results='asis'}
+par(mfrow = c(2,5))
+plot(yearlyData[[1]]$Close,main = "",sub = "")
+plot(yearlyData[[2]]$Close,main = "",sub = "")
+plot(yearlyData[[3]]$Close,main = "",sub = "")
+plot(yearlyData[[4]]$Close,main = "",sub = "")
+plot(yearlyData[[5]]$Close,main = "",sub = "")
+
+plot(yearlyData[[6]]$Close,main = "",sub = "")
+plot(yearlyData[[7]]$Close,main = "",sub = "")
+plot(yearlyData[[8]]$Close,main = "",sub = "")
+plot(yearlyData[[9]]$Close,main = "",sub = "")
+plot(yearlyData[[10]]$Close,main = "",sub = "")
+
+```
+
+Calculate the percentile of close with respect to 30 days previous prices.
+```{r block-30c, results='asis',eval=TRUE}
+subDays    <- lapply(d,FUN = function(x){return( (x-prevN):(x-2) ) })
+subDays    <- as.Date(unlist(subDays))
+
+dummyXts <- xts(order.by = subDays)
+gb    <- gbXts[index(dummyXts)]
+
+#Make High,Low,Close for each year
+res <- to.yearly(gb)
+colnames(res) <- colnames(gbXts)
+res$percentile <- (res$Close - res$Low) / (res$High - res$Low)
+res$percentile <- round(res$percentile, digits = 2)
+cat(sprintf("Year = %d # percentile = %0.2f",year(index(res)),res$percentile),sep = "#  \n  ")
+```
+    
+How many years the percentile is less than 60 (Meaning closer to the lows)? `r nrow(res[res$percentile < 0.6,])`  
+How many years the percentile is less than 50 (Meaning closer to the lows)? `r nrow(res[res$percentile < 0.5,])`  
+Total number of years : `r nrow(res)`  
+
+
+#Compare with international prices
+```{r block-30d, include=TRUE,eval=TRUE}
+#Since international markets revolve mostly around US, the US price effect of today (say 02nd) is reflected on (03rd) of India.
+#So, lag the prices by 1 day to compare apples to apples
+gld   <- lag.xts(GLD[index(dummyXts)])
+a <- merge.xts(gld$Close,gb$Close,join = "inner")
+a <- na.trim(a)
+colnames(a) <- c("intlClose","indiaClose")
+cor(a$intlClose,a$indiaClose)
+```
+How many times the prise rise in US reflected the price rise in India ? `r cor(a$intlClose,a$indiaClose)`  
+
+
+#30 Days Conclusion
+This concludes that almost `r nrow(res[res$percentile < 0.6,]) * 10`  percent of times the diwali prices drifted lower than 60 percentile and
+`r cor(a$intlClose,a$indiaClose)*100`  percent times is closely correlated with international prices.
+

@@ -1,4 +1,33 @@
 #' Functions for rulesNtrades
+#' BOP - Balance of power
+#' 
+#' This will return if the given price is hit by the candlebar.
+#' 
+#' @author Siva Sunku
+#' @keywords price
+#' @note
+#' 
+#' @param  price - price, that needs to be evaluated
+#' @param  bars  - bars with which, to be evaluated
+#' @param  closeLag - if only close of previous bar to be evaluated. In this, only latest candle row is considered
+#' @export
+
+BOP <- function(bar){
+  if (!is.xts(bar)){
+    stop("In is.price.hit bars is not an xts object")
+  }
+  
+  if (!is.OHLC(bar)){
+    stop("In is.price.hit bars is not an OHLC object")
+  }
+  length <- bar$High - bar$Low
+  wick   <- bar$Close - bar$Low
+  
+  return( round(wick / length, digits = 2) )
+}
+
+
+#' Functions for rulesNtrades
 #' is.price.hit
 #' 
 #' This will return if the given price is hit by the candlebar.
