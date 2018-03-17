@@ -57,40 +57,67 @@ myGraph <- function(pf, prices,
   }
   
   splitPrices  <- split.xts(prices,f = by, k=k)
+  
+  #Make EntryExit table
+  #eXall <- .entryexit(inTrades,prices)
+  #indexTZ(eXall) <- indexTZ(prices)
+  
+  #Add columns if not present
+  cnames <- colnames(eXall)
+  if (!("lE" %in% cnames) ) {eXall$lE <- NA}
+  if (!("lX" %in% cnames) ) {eXall$lX <- NA}
+  if (!("sE" %in% cnames) ) {eXall$sE <- NA}
+  if (!("sX" %in% cnames) ) {eXall$sX <- NA}
+  
+  
   #Make the slp/pb price table
   pbPrices <- .makePBtable(inPositions,parms)
-
+  
   pieces <- length(splitPrices)
   temp.plots <- vector(pieces,mode = 'list')
-
+  
   ## --- Loop -----------------------------------------------------------------------------------
   p <- 0
   i <- 1
   for (i in 1:(pieces)){
     c  <- splitPrices[[i]]
     a  <- OHLC(splitPrices[[i]])
+    # ex <- eXall[index(c)]
     pb <- pbPrices[index(c)]
     
     #Keep more y-range & x-range to keep the room for PB price lines.
-    prices <- pb[,grep("Price",colnames(pb))]
-    holdings <- pb[,"qty"]
-    hyrange <- c(min(pb$qty,0,na.rm = TRUE),max(pb$qty,0,na.rm = TRUE))
-    
-    maxPrice <- max(prices,c$High,na.rm = TRUE)
-    minPrice <- min(prices,c$Low,na.rm = TRUE)
+    maxPrice <- max(pb,c$High,na.rm = TRUE)
+    minPrice <- min(pb,c$Low,na.rm = TRUE)
     yrange <- c(minPrice,maxPrice)
     
     #Draw the Longs
     chartSeries(c,type = 'bars',yrange = yrange)
-
+    
+    if ( (all( is.na(ex) ) != TRUE) ) {
+      ex$lE  <- ex$lE * 40
+      ex$lX  <- ex$lX * 30
+      ex$sE  <- ex$sE * 20
+      ex$sX  <- ex$sX * 10
+      #ex[is.na(ex)] <- 0
+      #plot(addTA(shortE, on=1, type='p', pch=24, cex=0.5,col="red",  bg="red"))
+      
+      #plot the buy/sell trades
+      plot(addTA( ex,
+                  pch = c(24,25,24,25),
+                  col = c("blue","blue","red","red"),
+                  bg  = c("blue","blue","red","red"),
+                  cex = c(1,1,1,1),
+                  type = c('p','p','p','p')
+      ) )
+    }
+    plot(addTA(res[,c("bullFlow","bearFlow")],col=c("green","red")))
+    
     #plot the PB price, trail price etc
     plot(addTA(pb[,c("pbPrice","slpPrice","trailSlpPrice","trailPrice")],
                col = c("green","red","blue","orange"),
                type = c('o','o','o','o'),
                on = 1
-               ))
-    plot(addTA(res[,c("bullFlow","bearFlow")],col=c("green","red")))
-    plot(addTA(holdings$qty,type="b",yrange = hyrange,lwd = 2,col="red"))
+    ))
     temp.plots[[i]] <- recordPlot()
   }
   
@@ -102,7 +129,7 @@ myGraph <- function(pf, prices,
     }
     graphics.off()
   } 
-
+  
 } #end of function graph
 
 

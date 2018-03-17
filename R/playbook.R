@@ -10,17 +10,22 @@ delete.portfolio()
 library(knitr)
 library(rulesNtrades)
 library(evalStrats)
-source("R/longs.R")
+library(blotter)
+library(PerformanceAnalytics)
+library(FinancialInstrument)
+
+#source("R/longs.R")
 source("R/shorts.R")
 source("R/graph.R")
 source("R/extraFunctions.R")
+source("R/make.blotter.R")
 # source("R/mybacktestWIP.R")
 # source("R/myCalcLimitsWIP.R")
 
 ## ----Prepare the data----------------------------------------------------
 myWidth <- 9
 data("SBIN")
-d <- SBIN["2016-02::2016-12"]
+d <- SBIN["2016-03::2016-09"]
 d1 <- flow(d)
 
 d2 <- rollapply(d1,
@@ -35,7 +40,7 @@ res <- na.trim(res)
 
 ## ----Set all the parameters     ----------------------------------------
 parms <- tradeParms()
-parms$longTrades  <- TRUE
+parms$longTrades  <- FALSE
 parms$shortTrades <- TRUE
 parms$sameDayFlag <- FALSE
 
@@ -50,7 +55,7 @@ parms$slpAmt     <- 9
 parms$pbFlag     <- TRUE
 parms$pbAmt      <- 15
 parms$pbQty      <- 3000
-parms$pbRunQty   <- 0
+parms$pbRunQty   <- 3000
 #
 parms$trlFlag     <- TRUE
 parms$trlInitAmt  <- 12
@@ -59,7 +64,8 @@ parms$trlSlpAmt   <- NA
 
 
 ## ----Create the default portfolio----------------------------------------
-if( exists("pf") && is.portfolio(pf)) {delete.portfolio(pf = "default") }
+#if( exists("pf") && is.portfolio(pf)) {delete.portfolio(pf = "default") }
+delete.portfolio()
 pf <- portfolio()
 
 ## ----backtest the strategies---------------------------------------------
@@ -93,5 +99,5 @@ write.csv(a,file = "temp3.csv")
 myGraph(pf,
         prices = res[,1:4],
         parms = parms,
-        file = "temp5.pdf",
+        #file = "temp5.pdf",
         by = "quarters")

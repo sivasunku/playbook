@@ -61,6 +61,24 @@ shortExit <- function(cPos,parms,m,i,...){
   }
   
   
+  cPos <- shortExitSlps(cPos,parms,m,i,...)
+  return(cPos)
+}
+
+shortExitSlps <- function(cPos,parms,m,i,...){
+  if (! isopen(cPos) ) { return(cPos)}
+  ##  --- Set the Variables ---------------------------------------------------------
+  bar <- m[i,]
+  Op <- as.numeric(bar$Open)
+  Hi <- as.numeric(bar$High)
+  Lo <- as.numeric(bar$Low)
+  Cl <- as.numeric(bar$Close)
+  
+  bu <- as.numeric(m[i,]$bullFlow)
+  be <- as.numeric(m[i,]$bearFlow)
+  
+  
+  
   ##  --- SLP check for open---------------------------------------------------------
   if ( (parms$slpFlag) && (Op > cPos$slpPrice) ){
     cPos$closeDate  <- index(bar)
@@ -105,7 +123,7 @@ shortExit <- function(cPos,parms,m,i,...){
   
   
   
-  ##  --- Profit Booking check -------------------------------------------------
+  ##  --- Profit Booking check  -------------------------------------------------
   
   if ( (parms$pbFlag) && (Op < cPos$pbPrice) && (cPos$openQty > parms$pbRunQty) ){
     cPos$closeDate  <- index(bar)
@@ -116,6 +134,7 @@ shortExit <- function(cPos,parms,m,i,...){
     return(cPos)
   }
   
+  ##  --- Profit Booking check open -------------------------------------------------
   if ( (parms$pbFlag) && is.price.hit(cPos$pbPrice,bar) && (cPos$openQty > parms$pbRunQty) ){
     cPos$closeDate  <- index(bar)
     cPos$closeFlag  <- TRUE

@@ -59,6 +59,25 @@ longExit <- function(cPos,parms,m,i,...){
   
   
   
+  
+  cPos <- longExitSlps(cPos,parms,m,i,...)
+  ## --- End Return -------------------------------------------------------------
+  return(cPos)
+}
+
+
+longExitSlps <- function(cPos,parms,m,i){
+  ##  --- Set the Variables ---------------------------------------------------------
+  bar <- m[i,]
+  Op <- as.numeric(bar$Open)
+  Hi <- as.numeric(bar$High)
+  Lo <- as.numeric(bar$Low)
+  Cl <- as.numeric(bar$Close)
+  
+  bu <- as.numeric(m[i,]$bullFlow)
+  be <- as.numeric(m[i,]$bearFlow)
+  
+  
   ##  --- SLP check  For Open---------------------------------------------------------
   if ( (parms$slpFlag) && (Op < cPos$slpPrice) ){
     cPos$closeDate  <- index(bar)
@@ -100,9 +119,8 @@ longExit <- function(cPos,parms,m,i,...){
     return(cPos)
   }
   
-  
-  ##  --- Profit Booking check -------------------------------------------------
-  #1. If Open itself more than pbPrice, close the position with Openprice
+
+  ##  --- Profit Booking check for open -------------------------------------------------
   if ( (parms$pbFlag) && (Op > cPos$pbPrice) && (cPos$openQty > parms$pbRunQty) ){
     cPos$closeDate  <- index(bar)
     cPos$closeFlag  <- TRUE
@@ -111,7 +129,7 @@ longExit <- function(cPos,parms,m,i,...){
     cPos$closeReason <- "Profit Booking in Open"
     return(cPos)
   }
-  #2. If Candle hit the pbPrice, close the position
+  ##  --- Profit Booking check  -------------------------------------------------
   if ( (parms$pbFlag) && is.price.hit(cPos$pbPrice,bar) && (cPos$openQty > parms$pbRunQty) ){
     cPos$closeDate  <- index(bar)
     cPos$closeFlag  <- TRUE
@@ -123,4 +141,5 @@ longExit <- function(cPos,parms,m,i,...){
   
   ## --- End Return -------------------------------------------------------------
   return(cPos)
+  
 }
