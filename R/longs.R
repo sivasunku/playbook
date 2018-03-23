@@ -17,6 +17,19 @@ longEntry <- function(parms,m,i,...) {
   be <- as.numeric(m[i,]$bearFlow)
   cPos <- position(instr = parms$instrument)
   
+  ##  --- For intraday, if time not yet up, return --------------------------------
+  if ( parms$intraday  ){
+    #No trades before start time & after end time
+    if ( parms$idStartTime > format(index(m[i,]),format = "%H:%M") ) {
+      return(cPos)
+    }
+    
+    if ( parms$idEndTime <= format(index(m[i,]),format = "%H:%M") ) {
+      return(cPos)
+    }
+    
+  }
+  
   ##  --- Check the Entry Condition -------------------------------------------------
   if (bu > be){
     cPos$openDate   <- index(bar)
@@ -138,6 +151,17 @@ longExitSlps <- function(cPos,parms,m,i){
     cPos$closeReason <- "Profit Booking"
     return(cPos)
   }
+  
+  ##  --- Check if end of the day ----------------
+  if ( (parms$intraday) && (parms$idEndTime <= format(index(m[i,]),format = "%H:%M") ) ){
+    cPos$closeDate  <- index(bar)
+    cPos$closeFlag  <- TRUE
+    cPos$closeQty   <- cPos$openQty
+    cPos$closePrice <- Cl
+    cPos$closeReason <- "End of Day"
+    return(cPos)
+  }
+  
   
   ## --- End Return -------------------------------------------------------------
   return(cPos)

@@ -1,22 +1,16 @@
 #' make.blotter - Add all the transactions to a blotter package
 #' 
 #' This will add the transactions in a given rulesNtrades portfolio to blotter package
-#' 
+#'  If you want to remove anything from blotter, use below commans
+#'  rm(list=ls(envir=.blotter), envir = .blotter) 
+#'  rm("portfolio.CUD",pos=.blotter)
+#'  rm("account.CUD",pos=.blotter)  
+#'  rm("order_book.CUD",pos=.strategy)  
 #' @author Siva Sunku
 #' @keywords graph,plot
 #' @note
 #' 
 #'
-
-
-# --- rm commands for blotter environment ----------------
-# rm(list=ls(envir=.blotter), envir = .blotter) 
-# rm("portfolio.CUD",pos=.blotter)
-# rm("account.CUD",pos=.blotter)
-# rm("order_book.CUD",pos=.strategy)
-
-
-# --- assign commands -------------------------------------
 make.blotter <- function(in.port, 
                          out.port = "temp.blot",
                          cur = "USD",
@@ -26,17 +20,16 @@ make.blotter <- function(in.port,
                          verboseFlag = TRUE,
                          forceClose = FALSE){
   
-  currency(cur)
   if( is.portfolio(out.port) ) {
-    if ( forceClose == TRUE){ 
-      rm(list=ls(envir=.blotter), envir = .blotter)
-      rm(list=ls(envir=.strategy), envir = .strategy)
-    } else {
-      tempStr <- sprintf("%s - portfolio is already present. Delete it before proceeding",out.port)
-      stop(tempStr)
+    if ( forceClose == TRUE){
+      rm(list=ls(envir=.blotter,pattern = out.port), envir = .blotter)
+      rm(list=ls(envir=.strategy,pattern = out.port), envir = .strategy)
     }
+    tempStr <- sprintf("%s - portfolio is already present. Delete it before proceeding",out.port)
+    stop(tempStr)
   }
   
+  currency(cur)
   stock(symbol, currency=cur, multiplier=1)
   initPortf(out.port, symbols=symbol, initDate=initDate)
   initAcct(out.port, portfolios=out.port, initDate=initDate)
@@ -60,5 +53,3 @@ make.blotter <- function(in.port,
   #addTxn(out.port, Symbol='SBIN',TxnDate='2016-03-21', TxnPrice=196.75, TxnQty = -3000,TxnFees=0,verbose=TRUE)
   return(out.port)
 }
-
-

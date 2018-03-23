@@ -5,27 +5,24 @@
 #########################################################################
 
 ## ----include=FALSE-------------------------------------------------------
-rm(list =ls())
-delete.portfolio()
-library(knitr)
 library(rulesNtrades)
-library(evalStrats)
-library(blotter)
-library(PerformanceAnalytics)
-library(FinancialInstrument)
+library(dataNindicators)
+clean.all.portfolios()
+rm(list =ls())
+load("data/temp.rda")
 
-#source("R/longs.R")
+source("R/longs.R")
 source("R/shorts.R")
 source("R/graph.R")
-source("R/extraFunctions.R")
-source("R/make.blotter.R")
-# source("R/mybacktestWIP.R")
-# source("R/myCalcLimitsWIP.R")
+#source("R/extraFunctions.R")
 
 ## ----Prepare the data----------------------------------------------------
 myWidth <- 9
-data("SBIN")
-d <- SBIN["2016-03::2016-09"]
+#data("SBIN")
+#d <- SBIN["2016-03::2016-05"]
+d  <- n
+d  <- to.minutes5(d,indexAt = 'startof')
+colnames(d) <- c("Open","High","Low","Close","Volume")
 d1 <- flow(d)
 
 d2 <- rollapply(d1,
@@ -40,33 +37,38 @@ res <- na.trim(res)
 
 ## ----Set all the parameters     ----------------------------------------
 parms <- tradeParms()
-parms$longTrades  <- FALSE
+parms$longTrades  <- TRUE
 parms$shortTrades <- TRUE
-parms$sameDayFlag <- FALSE
+parms$sameDayFlag <- TRUE
 
-parms$instrument <- "SBIN"
-parms$qty        <- 6000
+parms$instrument <- "NIFTY"
+parms$qty        <- 300
 #
 parms$pctFlag    <- FALSE
 #
-parms$slpFlag    <- TRUE
+parms$slpFlag    <- FALSE
 parms$slpAmt     <- 9
 # 
-parms$pbFlag     <- TRUE
+parms$pbFlag     <- FALSE
 parms$pbAmt      <- 15
 parms$pbQty      <- 3000
 parms$pbRunQty   <- 3000
 #
-parms$trlFlag     <- TRUE
+parms$trlFlag     <- FALSE
 parms$trlInitAmt  <- 12
 parms$trlIncrAmt  <- 6
 parms$trlSlpAmt   <- NA
 
+parms$intraday    <- TRUE
+parms$idStartTime <- "09:30"
+parms$idEndTime   <- "15:15"
+
 
 ## ----Create the default portfolio----------------------------------------
 #if( exists("pf") && is.portfolio(pf)) {delete.portfolio(pf = "default") }
+pf <- "default"
 delete.portfolio()
-pf <- portfolio()
+pf <- portfolio(pf = "default")
 
 ## ----backtest the strategies---------------------------------------------
 options(warn = 2)
@@ -92,10 +94,12 @@ ltStats <- stats.trades(lt)
 cbind(tStats,stStats,ltStats)
 t %>% group_by(direction,openReason,closeReason) %>% summarise(Profit = sum(netP))
 
-get.positions.table(pf) -> a
-write.csv(a,file = "temp3.csv")
+## ----make blotter  ----------------------------------------------------
+make.blotter(pf)
+
 ## ----Graph the trades  ----------------------------------------------------
 #myGraph(pf,prices = res[,1:4],file = "temp4.pdf",by = "quarters")
+
 myGraph(pf,
         prices = res[,1:4],
         parms = parms,
