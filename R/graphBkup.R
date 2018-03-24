@@ -24,42 +24,77 @@
 #' @rdname graph
 #' @export
 #' 
-myGraph <- function(res,file=NULL,by="days") {
+myGraph <- function(pf, prices, 
+                    file = NULL, 
+                    by = 'quarters',
+                    parms = NULL,
+                    inTrades = NULL,
+                    inPositions = NULL,
+                    overFun = NULL,...) {
   
   width <- 5
   ## --- Housekeeping -----------------------------------------------------------------------------------
-  
+  if ( !is.valid.portfolio(pf) ) {
+    stop("graph - portfolio is not a valid portfolio. Create one using portfolio before using the same.")
+  }
+  if ( missing(inTrades) ){
+    inTrades <- get.trades(pf)
+  }
+  if ( missing(inPositions)){
+    inPositions <- get.positions.table(pf)
+  }
+  if (!is.null(file) && file.exists(file)) { 
+    msg <- paste( "File", file, " Exists already. It is overwritten",sep="")
+    warnings(msg)
+  }
+  if ( !missing(overFun) && !is.function(overFun) ){
+    stop("graph - overFun should be a function")
+  }
   k <- 1
   if (by == "halfyear"){
     by <- "months"
     k  <- 6
   }
   
-  splitPrices  <- split.xts(res,f = by, k=k)
+  splitPrices  <- split.xts(prices,f = by, k=k)
   #Make the slp/pb price table
+  pbPrices <- .makePBtable(inPositions,parms)
   
-
   pieces <- length(splitPrices)
   temp.plots <- vector(pieces,mode = 'list')
-
+  
   ## --- Loop -----------------------------------------------------------------------------------
   p <- 0
   i <- 1
   for (i in 1:(pieces)){
     c  <- splitPrices[[i]]
+    a  <- OHLC(splitPrices[[i]])
+    pb <- pbPrices[index(c)]
+    
+    #Keep more y-range & x-range to keep the room for PB price lines.
+    prices <- pb[,grep("Price",colnames(pb))]
+    holdings <- pb[,"qty"]
+    hyrange <- c(min(pb$qty,0,na.rm = TRUE),max(pb$qty,0,na.rm = TRUE))
+    
+    maxPrice <- max(prices,c$High,na.rm = TRUE)
+    minPrice <- min(prices,c$Low,na.rm = TRUE)
+    yrange <- c(minPrice,maxPrice)
     
     #Draw the Longs
-    chartSeries(c)
-    plot(addTA(c$hema,col="green",on=1))
-    plot(addTA(c$lema,col="red",on=1))
-    plot(addTA(c$hemaHiSum,col="green"))
-    plot(addTA(c$lemaLoSum,col="red",on=3))
-
-    #End of drawings
+    chartSeries(c,type = 'bars',yrange = yrange)
+    
+    #plot the PB price, trail price etc
+    plot(addTA(pb[,c("pbPrice","slpPrice","trailSlpPrice","trailPrice")],
+               col = c("green","red","blue","orange"),
+               type = c('o','o','o','o'),
+               on = 1
+    ))
+    plot(addTA(res[,c("bullFlow","bearFlow")],col=c("green","red")))
+    plot(addTA(holdings$qty,type="b",yrange = hyrange,lwd = 2,col="red"))
     temp.plots[[i]] <- recordPlot()
   }
-  ## --- pdf -----------------------------------------------------------------------------------
   
+  #print to pdf
   if ( !is.null(file) ) {
     pdf(file,onefile = TRUE)
     for(i in temp.plots){
@@ -67,7 +102,7 @@ myGraph <- function(res,file=NULL,by="days") {
     }
     graphics.off()
   } 
-
+  
 } #end of function graph
 
 
