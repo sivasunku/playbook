@@ -1,1 +1,3 @@
-Sample file for learning Git
+Sample file for learning Gita
+
+Added this text
