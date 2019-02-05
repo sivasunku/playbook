@@ -1,3 +1,0 @@
-This is first linea
-
-Second line added after 'add command'
